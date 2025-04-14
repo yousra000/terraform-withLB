@@ -3,7 +3,7 @@ data "aws_ami" "fedora" {
 
   filter {
     name   = "name"
-    values = ["Fedora-Cloud-Base-38-*"]
+    values = ["Fedora-Cloud-Base-39-*"] # Updated to Fedora 39
   }
 
   filter {
@@ -16,5 +16,5 @@ data "aws_ami" "fedora" {
     values = ["x86_64"]
   }
 
-  owners = ["125523088429"] # Official Fedora project AWS account ID
+  owners = ["125523088429"] # Official Fedora Project
 }
