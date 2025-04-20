@@ -35,6 +35,17 @@ resource "aws_subnet" "private_subnet" {
   }
 }
 
+resource "aws_subnet" "private_subnet2" {
+  vpc_id            = aws_vpc.custom_vpc.id
+  count             = length(var.vpc_availability_zones)
+  cidr_block        = cidrsubnet(aws_vpc.custom_vpc.cidr_block, 8, count.index + 10)
+  availability_zone = element(var.vpc_availability_zones, count.index)
+  tags = {
+    Name = "YT Private subnet2 ${count.index + 1}"
+  }
+}
+
+
 //3. Internet Gateway
 resource "aws_internet_gateway" "igw_vpc" {
   vpc_id = aws_vpc.custom_vpc.id
@@ -43,24 +54,7 @@ resource "aws_internet_gateway" "igw_vpc" {
   }
 }
 
-//4. Route table for public subnet
-resource "aws_route_table" "yt_route_table_public_subnet" {
-  vpc_id = aws_vpc.custom_vpc.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw_vpc.id
-  }
-  tags = {
-    Name = "Public subnet Route Table"
-  }
-}
 
-//5. Route table association with public subnet
-resource "aws_route_table_association" "public_subnet_association" {
-  route_table_id = aws_route_table.yt_route_table_public_subnet.id
-  count          = length(var.vpc_availability_zones)
-  subnet_id      = element(aws_subnet.public_subnet[*].id, count.index)
-}
 
 //6. Elastic IP
 resource "aws_eip" "eip" {
@@ -80,6 +74,17 @@ resource "aws_nat_gateway" "yt-nat-gateway" {
 }
 
 //8. Route table for Private subnet
+//4. Route table for public subnet
+resource "aws_route_table" "yt_route_table_public_subnet" {
+  vpc_id = aws_vpc.custom_vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw_vpc.id
+  }
+  tags = {
+    Name = "Public subnet Route Table"
+  }
+}
 resource "aws_route_table" "yt_route_table_private_subnet" {
   depends_on = [aws_nat_gateway.yt-nat-gateway]
   vpc_id     = aws_vpc.custom_vpc.id
@@ -92,9 +97,21 @@ resource "aws_route_table" "yt_route_table_private_subnet" {
   }
 }
 
+//5. Route table association with public subnet
+resource "aws_route_table_association" "public_subnet_association" {
+  route_table_id = aws_route_table.yt_route_table_public_subnet.id
+  count          = length(var.vpc_availability_zones)
+  subnet_id      = element(aws_subnet.public_subnet[*].id, count.index)
+}
 //9. Route table association with private subnet
 resource "aws_route_table_association" "private_subnet_association" {
   route_table_id = aws_route_table.yt_route_table_private_subnet.id
   count          = length(var.vpc_availability_zones)
   subnet_id      = element(aws_subnet.private_subnet[*].id, count.index)
+}
+
+resource "aws_route_table_association" "private_subnet2_association" {
+  route_table_id = aws_route_table.yt_route_table_private_subnet.id
+  count          = length(var.vpc_availability_zones)
+  subnet_id      = element(aws_subnet.private_subnet2[*].id, count.index)
 }
